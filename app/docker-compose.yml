@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  user-service:
+    build: ./user-service
+    ports:
+      - "3001:3001"
+
+  chat-service:
+    build: ./chat-service
+    ports:
+      - "3002:3002"
+
+  message-service:
+    build: ./message-service
+    ports:
+      - "3003:3003"
+
+  gateway-service:
+    build: ./gateway-service
+    ports:
+      - "8000:8000"
+
+  frontend-service:
+    build: ./frontend-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway-service
