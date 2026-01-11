@@ -1,8 +1,12 @@
-FROM rust:1.74 as builder
+FROM python:3.11-slim
+
 WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
-RUN cargo build --release
-FROM debian:bookworm-slim
-COPY --from=builder /app/target/release/gateway-service /usr/local/bin/gateway-service
+
 EXPOSE 8000
-CMD ["gateway-service"]
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "app:app"]

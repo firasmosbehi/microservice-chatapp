@@ -1,10 +1,35 @@
-version: '3.8'
-
 services:
+  mongo:
+    image: mongo:latest
+    container_name: chatapp-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+
+  postgres:
+    image: postgres:15
+    container_name: chatapp-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chatapp_messages
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   user-service:
     build: ./user-service
     ports:
       - "3001:3001"
+    depends_on:
+      - mongo
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongo:27017/chatapp-users?authSource=admin
 
   chat-service:
     build: ./chat-service
@@ -15,11 +40,29 @@ services:
     build: ./message-service
     ports:
       - "3003:3003"
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=chatapp_messages
+      - DB_PORT=5432
 
   gateway-service:
     build: ./gateway-service
     ports:
       - "8000:8000"
+    environment:
+      - USER_SERVICE_URL=http://user-service:3001
+      - CHAT_SERVICE_URL=http://chat-service:3002
+      - MESSAGE_SERVICE_URL=http://message-service:3003
+      - PORT=8000
+      - JWT_SECRET=super-secret-gateway-key
+    depends_on:
+      - user-service
+      - chat-service
+      - message-service
 
   frontend-service:
     build: ./frontend-service
@@ -27,3 +70,7 @@ services:
       - "3000:3000"
     depends_on:
       - gateway-service
+
+volumes:
+  mongo_data:
+  postgres_data:
