@@ -15,7 +15,7 @@ import (
 // Simple message model
 type Message struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
-	RoomID    uint      `json:"room_id"`
+	RoomID    string    `json:"room_id"` // Changed from uint to string
 	SenderID  uint      `json:"sender_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
@@ -24,7 +24,7 @@ type Message struct {
 
 // Room model
 type Room struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
+	ID        string    `json:"id" gorm:"primaryKey"` // Changed from uint to string
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
