@@ -634,7 +634,4 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`User Service running on port ${PORT}`);
-  console.log(`MongoDB URI: ${MONGODB_URI}`);
-});
+module.exports = app;
