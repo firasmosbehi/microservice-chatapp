@@ -1,0 +1,84 @@
+# Ignore hidden files
+.*
+
+# Ignore git-related files
+.git/
+.gitignore
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore test-related files
+tests/
+test-results/
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Ignore documentation
+docs/
+
+# Ignore virtual environments
+venv/
+env/
+.venv/
+.POE*
+.poetry/
+
+# Ignore configuration files
+.config/
+.settings/
+.local/
+
+# Ignore temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.py,cover
+
+# Ignore build artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore coverage reports
+.coverage*
+.coverage
+
+# Ignore local configuration
+.env
+.env.*
+
+# Ignore editor backups
+*~
+*.bak
+
+# Ignore poetry cache
+.cache/
+
+# Ignore mypy cache
+.mypy_cache/
+
+# Ignore local SQLite databases
+*.db
+*.sqlite
+
+# Ignore lock files
+poetry.lock  # Only ignore if you want to generate fresh requirements during build

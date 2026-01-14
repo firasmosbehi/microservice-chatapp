@@ -55,13 +55,23 @@ def run_unit_tests() -> bool:
     """Run unit tests with coverage"""
     cmd = [
         "poetry", "run", "pytest", 
-        "tests/", 
+        "tests/unit/", 
         "-v", 
         "--cov=chat_app", 
         "--cov-report=term-missing", 
         "--cov-report=xml"
     ]
     return run_command(cmd, "Running unit tests")
+
+
+def run_integration_tests() -> bool:
+    """Run integration tests"""
+    cmd = [
+        "poetry", "run", "pytest", 
+        "tests/integration/", 
+        "-v"
+    ]
+    return run_command(cmd, "Running integration tests")
 
 
 def run_security_checks() -> bool:
@@ -107,14 +117,17 @@ def main():
     
     success = True
     
+    if action in ["all", "unit-test"]:
+        success &= run_unit_tests()
+    
+    if action in ["all", "integration-test"]:
+        success &= run_integration_tests()
+    
     if action in ["all", "lint"]:
         success &= run_linting()
     
     if action in ["all", "type-check"]:
         success &= run_type_checking()
-    
-    if action in ["all", "test"]:
-        success &= run_unit_tests()
     
     if action in ["all", "security"]:
         success &= run_security_checks()

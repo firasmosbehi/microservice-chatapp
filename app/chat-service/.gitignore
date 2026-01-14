@@ -201,6 +201,3 @@ env/
 # Test reports
 test-results/
 junit.xml
-
-# Docker
-.dockerignore
