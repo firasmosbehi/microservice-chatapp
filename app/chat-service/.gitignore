@@ -1,0 +1,206 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.c
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   For a library or package, you might want to ignore these files since the code is
+#   intended to run in multiple environments; otherwise, check them in:
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in some cases (e.g. if you have multiple people working on the same codebase and
+#   deploying to different environments), you may want to ignore it:
+#Pipfile.lock
+
+# poetry
+#   Similar to Pipfile.lock, it is recommended to include poetry.lock in version control,
+#   however if you have multiple environments you may choose to ignore it:
+#poetry.lock
+
+# pdm
+#   Similar to Pipfile.lock, it is recommended to include pdm.lock in version control,
+#   however if you have multiple environments you may choose to ignore it:
+#pdm.lock
+#   Relative paths to the project's .venv directory are specified in .pdm-python.
+#   It is recommended to include .pdm-python in version control, however if you have
+#   multiple environments with different Python versions, you may choose to ignore it:
+#pdm-python
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local configuration files
+.config/
+.settings/
+.local/
+
+# Secrets and sensitive information
+secrets/
+*.key
+*.pem
+*.crt
+*.cert
+*.secret
+.env.*
+
+# Coverage reports
+.coverage*
+coverage.xml
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Compiled assets
+*.o
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Poetry virtual environment
+.POE*
+.poetry/
+
+# FastAPI/Uvicorn
+.uvicorn*
+
+# Test reports
+test-results/
+junit.xml
+
+# Docker
+.dockerignore
