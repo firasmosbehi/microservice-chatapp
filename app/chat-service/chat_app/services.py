@@ -13,7 +13,7 @@ from fastapi import WebSocket
 class ChatService:
     """Main service class handling chat business logic"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # Enhanced in-memory storage
         self.chat_rooms: Dict[str, Dict] = {}
         self.messages: Dict[str, List[Dict]] = defaultdict(list)
@@ -22,7 +22,7 @@ class ChatService:
         self.user_presence: Dict[str, Set[str]] = defaultdict(set)  # room_id -> set of user_ids
         self.typing_users: Dict[str, Set[str]] = defaultdict(set)  # room_id -> set of typing user_ids
     
-    async def broadcast_to_room(self, room_id: str, message: dict):
+    async def broadcast_to_room(self, room_id: str, message: dict) -> None:
         """Broadcast message to all connections in a room"""
         if room_id in self.active_connections:
             disconnected = []
@@ -36,7 +36,7 @@ class ChatService:
             for conn in disconnected:
                 self.active_connections[room_id].remove(conn)
     
-    async def notify_user_presence(self, room_id: str, user_id: int, username: str, status: str):
+    async def notify_user_presence(self, room_id: str, user_id: int, username: str, status: str) -> None:
         """Notify room about user presence changes"""
         presence_message = {
             "type": "presence_change",
@@ -159,7 +159,7 @@ class ChatService:
             "online_members": self.chat_rooms[room_id]["online_members"]
         }
     
-    async def leave_room(self, room_id: str, user_id: int, username: str):
+    async def leave_room(self, room_id: str, user_id: int, username: str) -> None:
         """Leave a chat room"""
         if room_id not in self.chat_rooms:
             raise ValueError("Room not found")
@@ -254,7 +254,7 @@ class ChatService:
         # Return messages in reverse chronological order (newest first)
         return room_messages[::-1][offset:offset + limit]
     
-    async def update_typing_status(self, room_id: str, user_id: int, is_typing: bool):
+    async def update_typing_status(self, room_id: str, user_id: int, is_typing: bool) -> None:
         """Update typing status for a user in a room"""
         if room_id not in self.chat_rooms:
             raise ValueError("Room not found")
@@ -266,7 +266,7 @@ class ChatService:
         
         await self.broadcast_typing_status(room_id)
     
-    async def broadcast_typing_status(self, room_id: str):
+    async def broadcast_typing_status(self, room_id: str) -> None:
         """Broadcast current typing users to the room"""
         typing_list = list(self.typing_users[room_id])
         typing_event = {
@@ -277,7 +277,7 @@ class ChatService:
         }
         await self.broadcast_to_room(room_id, typing_event)
     
-    async def add_reaction(self, message_id: str, user_id: int, reaction: str):
+    async def add_reaction(self, message_id: str, user_id: int, reaction: str) -> dict:
         """Add reaction to a message"""
         # Find the message and add reaction
         for room_id, room_messages in self.messages.items():
@@ -301,11 +301,12 @@ class ChatService:
                         "reactions": msg["reactions"]
                     }
                     await self.broadcast_to_room(room_id, reaction_event)
-                    return msg["reactions"]
+                    reactions: dict = msg["reactions"]
+                    return reactions
         
         raise ValueError("Message not found")
     
-    async def handle_websocket_connection(self, websocket: WebSocket, room_id: str, user_id: str):
+    async def handle_websocket_connection(self, websocket: WebSocket, room_id: str, user_id: str) -> None:
         """Handle WebSocket connection lifecycle"""
         if room_id not in self.chat_rooms:
             await websocket.close(code=4004, reason="Room not found")

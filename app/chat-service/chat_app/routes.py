@@ -1,6 +1,6 @@
 """API routes for chat service"""
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from typing import List
 
 from .models import (
@@ -15,8 +15,8 @@ router = APIRouter(prefix="/api")
 chat_service = ChatService()
 
 
-@router.get("/")
-def read_root():
+@router.get("/", response_model=dict)
+def read_root() -> dict:
     """Health check endpoint"""
     return {
         "message": "Advanced Chat Service Running", 
@@ -33,7 +33,7 @@ def read_root():
 
 
 @router.post("/rooms", response_model=RoomResponse)
-def create_room(request: CreateRoomRequest):
+def create_room(request: CreateRoomRequest) -> RoomResponse:
     """Create a new chat room"""
     try:
         room_data = chat_service.create_room(
@@ -59,7 +59,7 @@ def create_room(request: CreateRoomRequest):
 
 
 @router.get("/rooms", response_model=List[RoomResponse])
-def get_rooms():
+def get_rooms() -> List[RoomResponse]:
     """Get all chat rooms"""
     try:
         rooms = chat_service.get_all_rooms()
@@ -69,7 +69,7 @@ def get_rooms():
 
 
 @router.get("/rooms/{room_id}", response_model=RoomResponse)
-def get_room(room_id: str):
+def get_room(room_id: str) -> RoomResponse:
     """Get specific room details"""
     try:
         room = chat_service.get_room(room_id)
@@ -93,7 +93,7 @@ def get_room(room_id: str):
 
 
 @router.post("/rooms/{room_id}/join")
-async def join_room(room_id: str, request: JoinRoomRequest):
+async def join_room(room_id: str, request: JoinRoomRequest) -> dict:
     """Join a chat room"""
     try:
         room_info = await chat_service.join_room(
@@ -116,7 +116,7 @@ async def join_room(room_id: str, request: JoinRoomRequest):
 
 
 @router.post("/rooms/{room_id}/leave")
-async def leave_room(room_id: str, request: JoinRoomRequest):
+async def leave_room(room_id: str, request: JoinRoomRequest) -> dict:
     """Leave a chat room"""
     try:
         await chat_service.leave_room(
@@ -135,7 +135,7 @@ async def leave_room(room_id: str, request: JoinRoomRequest):
 
 
 @router.post("/messages")
-async def send_message(request: MessageRequest):
+async def send_message(request: MessageRequest) -> dict:
     """Send a message to a chat room"""
     try:
         message_id = await chat_service.send_message(
@@ -160,7 +160,7 @@ async def send_message(request: MessageRequest):
 
 
 @router.get("/rooms/{room_id}/messages")
-def get_room_messages(room_id: str, limit: int = 50, offset: int = 0):
+def get_room_messages(room_id: str, limit: int = 50, offset: int = 0) -> list:
     """Get messages for a specific room"""
     try:
         messages = chat_service.get_room_messages(
@@ -176,7 +176,7 @@ def get_room_messages(room_id: str, limit: int = 50, offset: int = 0):
 
 
 @router.post("/typing")
-async def update_typing_status(request: TypingRequest):
+async def update_typing_status(request: TypingRequest) -> dict:
     """Update typing status for a user in a room"""
     try:
         await chat_service.update_typing_status(
@@ -192,7 +192,7 @@ async def update_typing_status(request: TypingRequest):
 
 
 @router.post("/reactions")
-async def add_reaction(reaction: MessageReaction):
+async def add_reaction(reaction: MessageReaction) -> dict:
     """Add reaction to a message"""
     try:
         reactions = await chat_service.add_reaction(

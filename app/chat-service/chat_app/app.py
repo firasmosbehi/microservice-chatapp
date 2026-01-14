@@ -29,7 +29,7 @@ app.include_router(router)
 
 
 @app.websocket("/ws/{room_id}/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
+async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str) -> None:
     """WebSocket endpoint for real-time chat"""
     await websocket_manager.handle_connection(websocket, room_id, user_id)
 

@@ -1,7 +1,6 @@
 """WebSocket handlers for real-time chat functionality"""
 
-from fastapi import WebSocket, WebSocketDisconnect
-import json
+from fastapi import WebSocket
 
 from .services import ChatService
 
@@ -12,6 +11,6 @@ class WebSocketManager:
     def __init__(self, chat_service: ChatService):
         self.chat_service = chat_service
     
-    async def handle_connection(self, websocket: WebSocket, room_id: str, user_id: str):
+    async def handle_connection(self, websocket: WebSocket, room_id: str, user_id: str) -> None:
         """Handle WebSocket connection lifecycle"""
         await self.chat_service.handle_websocket_connection(websocket, room_id, user_id)
