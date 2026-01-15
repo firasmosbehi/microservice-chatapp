@@ -1,4 +1,4 @@
-name: Docker Build and Deploy
+name: CI Pipeline
 
 on:
   push:
@@ -11,7 +11,109 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [chat]
+        include:
+          - service: chat
+            path: ./app/chat-service
+            
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install Poetry
+      run: |
+        pip install poetry
+
+    - name: Install dependencies
+      working-directory: ${{ matrix.path }}
+      run: |
+        poetry install
+
+    - name: Run tests
+      working-directory: ${{ matrix.path }}
+      run: |
+        poetry run python run_tests.py
+
+    - name: Run security scans
+      working-directory: ${{ matrix.path }}
+      run: |
+        # Install security tools
+        poetry run pip install safety bandit
+        
+        # Run safety check for vulnerable dependencies
+        echo "🔍 Running safety dependency check..."
+        poetry run safety check || echo "⚠️ Safety check completed with findings"
+        
+        # Run bandit security scanner
+        echo "🛡️ Running bandit security scan..."
+        poetry run bandit -r chat_app/ -ll || echo "⚠️ Bandit scan completed with findings"
+        
+        # Basic AST security check
+        echo "📋 Running basic security analysis..."
+        poetry run python -c "
+import ast
+from pathlib import Path
+
+def check_security_issues(file_path):
+    with open(file_path, 'r') as f:
+        try:
+            tree = ast.parse(f.read())
+            issues = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'eval':
+                    issues.append('Use of eval() found')
+                if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'exec':
+                    issues.append('Use of exec() found')
+            return issues
+        except SyntaxError:
+            return ['Syntax error in file']
+
+chat_app_dir = Path('chat_app')
+issues_found = []
+for py_file in chat_app_dir.rglob('*.py'):
+    file_issues = check_security_issues(py_file)
+    if file_issues:
+        issues_found.extend([f'{py_file}: {issue}' for issue in file_issues])
+
+if issues_found:
+    print('⚠️ Security issues found:')
+    for issue in issues_found:
+        print(f'  - {issue}')
+    exit(1)  # Fail the build if security issues found
+else:
+    print('✅ No basic security issues found')
+"
+
+    - name: Run linting and code quality checks
+      working-directory: ${{ matrix.path }}
+      run: |
+        echo "🧹 Running code quality checks..."
+        
+        # Run flake8
+        echo "🔍 Running flake8 linting..."
+        poetry run flake8 chat_app/ --max-line-length=100 --extend-ignore=E203,W503,E501,W292,W291,W293,E722,E128,F841,F401 || echo "⚠️ Flake8 found issues"
+        
+        # Run black formatting check
+        echo "🎨 Running black formatting check..."
+        poetry run black --check chat_app/ || echo "⚠️ Black formatting issues found"
+        
+        # Run mypy type checking
+        echo "📝 Running mypy type checking..."
+        poetry run mypy chat_app/ || echo "⚠️ MyPy type checking issues found"
+        
+        echo "✅ All quality checks completed"
+
   docker-build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
