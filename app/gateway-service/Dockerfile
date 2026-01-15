@@ -1,5 +1,5 @@
 # Multi-stage build for optimized Rust binary
-FROM rust:1.75 as builder
+FROM rust:1.81 as builder
 
 WORKDIR /app
 
