@@ -14,20 +14,14 @@ COPY poetry.lock pyproject.toml ./
 # Install Poetry
 RUN pip install poetry
 
-# Install dependencies
-RUN poetry export -f requirements.txt --without-hashes --only main > requirements.txt
-RUN pip install --user --no-cache-dir -r requirements.txt
+# Install dependencies directly with Poetry
+RUN poetry config virtualenvs.create false \
+    && poetry install --only main --no-interaction --no-ansi
 
 # Production stage
 FROM python:3.13-slim
 
 WORKDIR /app
-
-# Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
-
-# Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
 
 # Copy application code
 COPY . .
