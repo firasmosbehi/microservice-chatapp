@@ -126,3 +126,6 @@ jobs:
           ghcr.io/${{ github.repository_owner }}/chatapp/${{ matrix.service }}:latest
           ghcr.io/${{ github.repository_owner }}/chatapp/${{ matrix.service }}:${{ github.sha }}
         platforms: linux/amd64,linux/arm64
+        # Add build arguments if needed
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
