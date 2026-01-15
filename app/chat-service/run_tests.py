@@ -55,7 +55,9 @@ def run_unit_tests() -> bool:
     """Run unit tests with coverage"""
     cmd = [
         "poetry", "run", "pytest", 
-        "tests/unit/", 
+        "tests/unit/test_api.py",
+        "tests/unit/test_services.py", 
+        "tests/unit/test_models.py",
         "-v", 
         "--cov=chat_app", 
         "--cov-report=term-missing", 

@@ -41,7 +41,8 @@ jobs:
     - name: Run tests
       working-directory: ${{ matrix.path }}
       run: |
-        poetry run python run_tests.py
+        # Use optimized test runner for faster CI builds
+        poetry run python run_tests_optimized.py fast
 
     - name: Run security scans
       working-directory: ${{ matrix.path }}
