@@ -3,10 +3,19 @@ FROM rust:1.84 as builder
 
 WORKDIR /app
 
-# Copy all source files
+# Copy manifest first to leverage Docker cache for dependencies
+COPY Cargo.toml ./
+
+# Create a dummy main.rs to build dependencies only
+RUN mkdir src && \
+    echo "fn main() {}" > src/main.rs && \
+    cargo build --release && \
+    rm -rf src
+
+# Copy actual source code
 COPY . .
 
-# Build the application
+# Build the application (should be much faster now due to cached dependencies)
 RUN cargo build --release
 
 # Production stage
