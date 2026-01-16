@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::{HttpResponse, ResponseError, http::StatusCode};
 use serde::Serialize;
 use std::fmt;
 
@@ -17,7 +17,8 @@ impl fmt::Display for ApiError {
 
 impl ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code.into())
+        let status = StatusCode::from_u16(self.status_code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        HttpResponse::build(status)
             .json(serde_json::json!({
                 "error": self.error,
                 "message": self.message,

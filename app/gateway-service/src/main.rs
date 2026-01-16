@@ -1,13 +1,11 @@
-use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware, HttpRequest, web::Payload};
-use actix_web_actors::ws;
-use actix::prelude::*;
-use serde::{Deserialize, Serialize};
+use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware, HttpRequest};
+use serde::{Serialize};
 use serde_json::Value;
 use reqwest::Client;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use log::{info, warn, error};
+use log::{info, error};
 use std::env;
 
 mod auth;
@@ -15,9 +13,9 @@ mod error;
 mod validation;
 mod logging;
 
-use auth::{AuthMiddleware, Claims};
+use auth::AuthMiddleware;
 use error::ApiError;
-use validation::{validate_input, AuthRequest, CreateUserRequest, CreateRoomRequest, SendMessageRequest};
+use validation::{validate_input, AuthRequest};
 use logging::setup_logging;
 
 // Configuration structure
@@ -176,10 +174,13 @@ async fn validated_auth_handler(
 ) -> Result<HttpResponse, ApiError> {
     let (endpoint,) = path.into_inner();
     
+    // Extract the JSON value once
+    let json_value = payload.into_inner();
+    
     // Validate based on endpoint
     match endpoint.as_str() {
         "login" | "register" => {
-            let auth_request: AuthRequest = serde_json::from_value(payload.into_inner())
+            let auth_request: AuthRequest = serde_json::from_value(json_value.clone())
                 .map_err(|_| ApiError::bad_request("Invalid request format"))?;
             
             validate_input(&auth_request)
@@ -201,7 +202,7 @@ async fn validated_auth_handler(
         &data.config.user_service_url,
         &service_path,
         "POST",
-        Some(serde_json::from_value(payload.into_inner()).unwrap_or(Value::Null))
+        Some(json_value)
     ).await {
         Ok(response) => Ok(response),
         Err(_) => Err(ApiError::service_unavailable("User service unavailable"))

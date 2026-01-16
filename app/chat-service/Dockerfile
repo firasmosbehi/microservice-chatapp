@@ -1,5 +1,4 @@
-# Multi-stage build for optimized image
-FROM python:3.13-slim as builder
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -8,20 +7,11 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy poetry files
-COPY poetry.lock pyproject.toml ./
+# Copy requirements file
+COPY requirements.txt .
 
-# Install Poetry
-RUN pip install poetry
-
-# Install dependencies directly with Poetry
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi
-
-# Production stage
-FROM python:3.13-slim
-
-WORKDIR /app
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
