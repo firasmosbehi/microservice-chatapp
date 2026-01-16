@@ -173,15 +173,132 @@ node tests/run-tests.js
 ```bash
 cd app/chat-service
 # Fast unit tests
-poetry run python run_tests_optimized.py fast
+poetry run python run_tests_fast.py fast
 
 # Full test suite with coverage
-poetry run python run_tests_optimized.py coverage
+poetry run python run_tests_fast.py coverage
+
+# Run all tests (traditional runner)
+poetry run python run_tests.py
 
 # Run specific test modes
-poetry run python run_tests_optimized.py security  # Security scanning
-poetry run python run_tests_optimized.py lint      # Code quality
-poetry run python run_tests_optimized.py type-check # Type checking
+poetry run python run_tests_fast.py security  # Security scanning
+poetry run python run_tests_fast.py lint      # Code quality
+poetry run python run_tests_fast.py type-check # Type checking
+
+# Run tests with pytest directly
+poetry run pytest tests/unit/test_api.py tests/unit/test_services.py tests/unit/test_models.py -v
+poetry run pytest tests/unit/ -v --cov=chat_app
+poetry run pytest tests/integration/ -v
+
+# Security Testing Commands
+# Check for security vulnerabilities in dependencies
+poetry run python -c "
+import subprocess
+import sys
+try:
+    # Try to run safety check
+    result = subprocess.run([sys.executable, '-m', 'safety', 'check'], 
+                          capture_output=True, text=True, cwd='.')
+    if result.returncode == 0:
+        print('✅ Safety check passed')
+    else:
+        print('⚠️  Safety check found potential issues:')
+        print(result.stdout)
+except FileNotFoundError:
+    print('ℹ️  Safety not installed. Install with: pip install safety')
+    print('Then run: poetry run safety check')
+"
+
+# Basic security scanning with built-in tools
+poetry run python -c "
+import ast
+import os
+from pathlib import Path
+
+def check_security_issues(file_path):
+    with open(file_path, 'r') as f:
+        try:
+            tree = ast.parse(f.read())
+            issues = []
+            for node in ast.walk(tree):
+                # Check for eval usage
+                if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'eval':
+                    issues.append('Use of eval() found')
+                # Check for exec usage
+                if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'exec':
+                    issues.append('Use of exec() found')
+            return issues
+        except SyntaxError:
+            return ['Syntax error in file']
+
+# Scan Python files for basic security issues
+chat_app_dir = Path('chat_app')
+issues_found = []
+for py_file in chat_app_dir.rglob('*.py'):
+    file_issues = check_security_issues(py_file)
+    if file_issues:
+        issues_found.extend([f'{py_file}: {issue}' for issue in file_issues])
+
+if issues_found:
+    print('⚠️  Security issues found:')
+    for issue in issues_found:
+        print(f'  - {issue}')
+else:
+    print('✅ No basic security issues found in scan')
+"
+
+# Linting and Code Quality Commands
+# Flake8 linting (matches run_tests.py configuration)
+poetry run flake8 chat_app/ --max-line-length=100 --extend-ignore=E203,W503,E501,W292,W291,W293,E722,E128,F841,F401
+
+# Black code formatting check
+poetry run black --check chat_app/
+
+# MyPy type checking
+poetry run mypy chat_app/
+
+# Run all available quality checks together
+poetry run python -c "
+import subprocess
+import sys
+
+checks = [
+    ('Flake8 linting', ['flake8', 'chat_app/', '--max-line-length=100']),
+    ('Black formatting', ['black', '--check', 'chat_app/']),
+    ('MyPy type checking', ['mypy', 'chat_app/'])
+]
+
+passed = 0
+total = len(checks)
+
+for name, cmd in checks:
+    try:
+        result = subprocess.run(['poetry', 'run'] + cmd, 
+                              capture_output=True, text=True, cwd='.')
+        if result.returncode == 0:
+            print(f'✅ {name} passed')
+            passed += 1
+        else:
+            print(f'❌ {name} failed:')
+            print(result.stdout[:200] + '...' if len(result.stdout) > 200 else result.stdout)
+    except FileNotFoundError as e:
+        print(f'⚠️  {name} tool not found: {e}')
+    except Exception as e:
+        print(f'⚠️  {name} error: {e}')
+
+print(f'\n📊 Quality checks: {passed}/{total} passed')
+"
+
+# Installing Additional Security Tools (Optional)
+# To add advanced security scanning capabilities, install these tools:
+# 
+# poetry add --group dev bandit safety
+#
+# Then you can run:
+# poetry run bandit -r chat_app/ -ll
+# poetry run safety check
+# poetry run pip-audit
 ```
 
 **Message Service (Go)**
@@ -205,6 +322,41 @@ Each service includes comprehensive tests for:
 - Error handling
 - Security scanning
 - Code quality checks
+
+### Test Organization
+
+```
+app/chat-service/
+├── chat_app/                   # Main application package
+│   ├── __init__.py            # Package initialization
+│   ├── app.py                 # FastAPI application setup
+│   ├── models.py              # Pydantic data models
+│   ├── services.py            # Business logic layer
+│   ├── routes.py              # API endpoints
+│   └── websocket.py           # WebSocket handlers
+├── tests/                     # Test suite
+│   ├── unit/                  # Unit tests
+│   │   ├── test_api.py        # API endpoint tests
+│   │   ├── test_models.py     # Model validation tests
+│   │   ├── test_services.py   # Business logic tests
+│   │   ├── test_code_coverage.py # Code coverage tests
+│   │   ├── test_full_coverage.py # Full coverage tests
+│   │   └── test_complete_coverage.py # Complete coverage tests
+│   ├── integration/           # Integration tests
+│   │   └── test_integration.py # Integration tests
+│   ├── security/              # Security tests
+│   │   └── test_security.py   # Security vulnerability tests
+│   ├── linting/               # Linting tests
+│   │   └── test_linting.py    # Code quality tests
+│   └── conftest.py            # Test configuration
+├── scripts/                   # Scripts
+│   ├── run_tests.py           # Traditional test runner
+│   └── run_tests_fast.py      # Fast test runner
+├── main.py                    # Application entry point
+├── pyproject.toml             # Poetry configuration
+├── requirements.txt           # Python dependencies
+└── NAMING_CONVENTIONS.md      # Naming conventions documentation
+```
 
 ## CI/CD Pipeline
 
@@ -379,6 +531,16 @@ See [AGENTS.md](AGENTS.md) for comprehensive development commands and troublesho
 │   ├── gateway-service/            # Rust API gateway/load balancer
 │   ├── user-service/               # Node.js user management [MongoDB]
 │   ├── chat-service/               # Python real-time chat
+│   │   ├── chat_app/              # Application code
+│   │   ├── tests/                 # Test suite
+│   │   │   ├── unit/              # Unit tests
+│   │   │   ├── integration/       # Integration tests
+│   │   │   ├── security/          # Security tests
+│   │   │   └── linting/           # Linting tests
+│   │   ├── scripts/               # Test runners
+│   │   │   ├── run_tests.py       # Traditional runner
+│   │   │   └── run_tests_fast.py  # Fast runner
+│   │   └── NAMING_CONVENTIONS.md  # Naming conventions
 │   └── message-service/            # Go message persistence [PostgreSQL]
 ├── .github/
 │   └── workflows/

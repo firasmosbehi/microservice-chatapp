@@ -58,6 +58,9 @@ def run_unit_tests() -> bool:
         "tests/unit/test_api.py",
         "tests/unit/test_services.py", 
         "tests/unit/test_models.py",
+        "tests/unit/test_code_coverage.py",
+        "tests/unit/test_full_coverage.py",
+        "tests/unit/test_complete_coverage.py",
         "-v", 
         "--cov=chat_app", 
         "--cov-report=term-missing", 
@@ -76,32 +79,57 @@ def run_integration_tests() -> bool:
     return run_command(cmd, "Running integration tests")
 
 
-def run_security_checks() -> bool:
-    """Run basic security checks"""
-    print("🔒 Running security checks...")
-    try:
-        # Check for common security-related patterns in dependencies
-        result = subprocess.run([
-            "poetry", "show", "--tree"
-        ], capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            # Look for potential security concerns
-            security_keywords = ["security", "vulnerability", "cve"]
-            output_lower = result.stdout.lower()
-            for keyword in security_keywords:
-                if keyword in output_lower:
-                    print(f"⚠️  Potential security concern found: {keyword}")
-                    return True
-            
-            print("✅ No obvious security issues detected")
-            return True
-        else:
-            print(f"⚠️  Could not check dependencies: {result.stderr}")
-            return True  # Don't fail the build for this check
-    except Exception as e:
-        print(f"⚠️  Security check failed: {e}")
-        return True  # Don't fail the build for this check
+def run_security_tests() -> bool:
+    """Run comprehensive security tests"""
+    cmd = [
+        "poetry", "run", "pytest",
+        "tests/security/",
+        "-v",
+        "--tb=short"
+    ]
+    return run_command(cmd, "Running security tests")
+
+
+def run_linting_tests() -> bool:
+    """Run comprehensive linting tests"""
+    cmd = [
+        "poetry", "run", "pytest",
+        "tests/linting/",
+        "-v",
+        "--tb=short"
+    ]
+    return run_command(cmd, "Running linting tests")
+
+
+def run_bandit_security_scan() -> bool:
+    """Run bandit security scanner"""
+    cmd = [
+        "poetry", "run", "bandit",
+        "-r", "chat_app/",
+        "-f", "json",
+        "-o", "bandit-report.json"
+    ]
+    success = run_command(cmd, "Running bandit security scan")
+    
+    # Also run with text output for immediate feedback
+    cmd_text = [
+        "poetry", "run", "bandit",
+        "-r", "chat_app/",
+        "-ll"  # Low confidence issues
+    ]
+    run_command(cmd_text, "Bandit security scan (detailed)")
+    
+    return success
+
+
+def run_safety_check() -> bool:
+    """Run safety dependency vulnerability check"""
+    cmd = [
+        "poetry", "run", "safety",
+        "check",
+        "--full-report"
+    ]
+    return run_command(cmd, "Running safety dependency check")
 
 
 def main():
@@ -127,12 +155,26 @@ def main():
     
     if action in ["all", "lint"]:
         success &= run_linting()
+        success &= run_linting_tests()
     
     if action in ["all", "type-check"]:
         success &= run_type_checking()
     
     if action in ["all", "security"]:
-        success &= run_security_checks()
+        success &= run_security_tests()
+        success &= run_bandit_security_scan()
+        success &= run_safety_check()
+    
+    # New specific commands
+    if action == "security-full":
+        success &= run_security_tests()
+        success &= run_bandit_security_scan()
+        success &= run_safety_check()
+    
+    if action == "lint-full":
+        success &= run_linting_tests()
+        success &= run_linting()
+        success &= run_type_checking()
     
     if success:
         if action == "all":

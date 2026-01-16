@@ -11,6 +11,50 @@ permissions:
   packages: write
 
 jobs:
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: app/frontend-service/package-lock.json
+
+    # Cache Node.js dependencies
+    - name: Cache Node.js dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.npm
+          app/frontend-service/node_modules
+        key: node-frontend-${{ hashFiles('app/frontend-service/package-lock.json') }}
+        restore-keys: |
+          node-frontend-
+
+    - name: Install frontend dependencies
+      working-directory: app/frontend-service
+      run: |
+        npm ci
+
+    - name: Run frontend tests
+      working-directory: app/frontend-service
+      run: |
+        npm test
+
+    - name: Run frontend linting
+      working-directory: app/frontend-service
+      run: |
+        npx eslint src/
+
+    - name: Run frontend build
+      working-directory: app/frontend-service
+      run: |
+        npm run build
+
   test:
     runs-on: ubuntu-latest
     strategy:

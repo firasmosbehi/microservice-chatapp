@@ -4,7 +4,6 @@ version = "2.0.0"
 description = "Advanced real-time chat service with WebSocket support"
 authors = ["Your Name <your.email@example.com>"]
 license = "MIT"
-readme = "README.md"
 packages = [{include = "chat_app"}]
 
 [tool.poetry.dependencies]
@@ -23,6 +22,11 @@ black = "^23.11.0"
 flake8 = "^6.1.0"
 mypy = "^1.7.1"
 httpx = "^0.25.0"
+# Security testing tools
+bandit = "^1.7.5"
+safety = "^2.3.5"
+# Advanced linting and security
+pylint = "^2.17.7"
 
 [build-system]
 requires = ["poetry-core"]

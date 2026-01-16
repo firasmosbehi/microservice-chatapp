@@ -6,6 +6,7 @@ from typing import List, Optional
 
 class CreateRoomRequest(BaseModel):
     """Request model for creating a new chat room"""
+
     name: str
     creator_id: int
     description: Optional[str] = None
@@ -15,12 +16,14 @@ class CreateRoomRequest(BaseModel):
 
 class JoinRoomRequest(BaseModel):
     """Request model for joining a chat room"""
+
     user_id: int
     username: str
 
 
 class MessageRequest(BaseModel):
     """Request model for sending a message"""
+
     room_id: str
     user_id: int
     username: str
@@ -31,6 +34,7 @@ class MessageRequest(BaseModel):
 
 class RoomResponse(BaseModel):
     """Response model for room information"""
+
     id: str
     name: str
     description: Optional[str]
@@ -43,6 +47,7 @@ class RoomResponse(BaseModel):
 
 class TypingRequest(BaseModel):
     """Request model for typing indicators"""
+
     room_id: str
     user_id: int
     username: str
@@ -51,6 +56,7 @@ class TypingRequest(BaseModel):
 
 class MessageReaction(BaseModel):
     """Model for message reactions"""
+
     message_id: str
     user_id: int
     reaction: str  # emoji or reaction type

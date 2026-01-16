@@ -12,6 +12,8 @@ export const validatePassword = (password) => {
 export const formatTimestamp = (timestamp) => {
   if (!timestamp) return ''
   const date = new Date(timestamp)
+  // Check if date is valid
+  if (isNaN(date.getTime())) return ''
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
@@ -28,5 +30,26 @@ export const createUserHash = (userId) => {
 }
 
 export const isValidRoomName = (name) => {
-  return name && name.trim().length >= 1 && name.trim().length <= 50
+  if (typeof name !== 'string') return false
+  const trimmed = name.trim()
+  return trimmed.length >= 1 && trimmed.length <= 50
+}
+
+// Logging utility to handle different log levels
+export const logger = {
+  debug: (...args) => {
+    // Debug logs only in development
+    if (import.meta.env?.DEV) {
+      console.debug('[DEBUG]', ...args)
+    }
+  },
+  info: (...args) => {
+    console.info('[INFO]', ...args)
+  },
+  warn: (...args) => {
+    console.warn('[WARN]', ...args)
+  },
+  error: (...args) => {
+    console.error('[ERROR]', ...args)
+  }
 }

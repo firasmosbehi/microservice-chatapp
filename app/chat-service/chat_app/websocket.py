@@ -7,10 +7,12 @@ from .services import ChatService
 
 class WebSocketManager:
     """Manages WebSocket connections and real-time communication"""
-    
+
     def __init__(self, chat_service: ChatService):
         self.chat_service = chat_service
-    
-    async def handle_connection(self, websocket: WebSocket, room_id: str, user_id: str) -> None:
+
+    async def handle_connection(
+        self, websocket: WebSocket, room_id: str, user_id: str
+    ) -> None:
         """Handle WebSocket connection lifecycle"""
         await self.chat_service.handle_websocket_connection(websocket, room_id, user_id)

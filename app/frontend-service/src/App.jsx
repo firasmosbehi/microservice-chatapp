@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import './index.css';
 
@@ -25,54 +25,50 @@ function App() {
   const [lastMessageId, setLastMessageId] = useState(null);
   const messagesEndRef = useRef(null);
 
+  // Memoized API functions to prevent unnecessary re-renders
+  const apiClient = useRef(
+    axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  );
+
+  // Update auth token when it changes
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      apiClient.current.defaults.headers.Authorization = `Bearer ${token}`;
+    }
+  }, []);
+
   // Scroll to bottom of messages
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
-  // Load rooms when logged in
-  useEffect(() => {
-    if (isLoggedIn && currentUser) {
-      loadRooms();
-    }
-  }, [isLoggedIn, currentUser]);
-
-  // Load messages when room changes
-  useEffect(() => {
-    if (currentRoom) {
-      loadMessages(currentRoom.id);
-      // Set up polling for new messages
-      const interval = setInterval(() => {
-        loadMessages(currentRoom.id);
-      }, 2000); // Poll every 2 seconds
-      
-      return () => clearInterval(interval);
-    }
-  }, [currentRoom]);
-
-  const loadRooms = async () => {
+  // Load rooms function
+  const loadRooms = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/chat/rooms`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await apiClient.current.get('/api/chat/rooms');
       setRooms(response.data);
       if (response.data.length > 0 && !currentRoom) {
         setCurrentRoom(response.data[0]);
       }
     } catch (error) {
-      console.error('Failed to load rooms:', error);
+      console.warn('Failed to load rooms:', error.message);
     }
-  };
+  }, [currentRoom]);
 
-  const loadMessages = async (roomId) => {
+  // Load messages function
+  const loadMessages = useCallback(async (roomId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/messages/rooms/${roomId}/messages`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await apiClient.current.get(`/api/messages/rooms/${roomId}/messages`);
       
       const newMessages = response.data || [];
       
@@ -85,23 +81,48 @@ function App() {
         }
       }
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      console.warn('Failed to load messages:', error.message);
     }
-  };
+  }, [lastMessageId]);
+
+  // Load rooms when logged in
+  useEffect(() => {
+    if (isLoggedIn && currentUser) {
+      loadRooms();
+    }
+  }, [isLoggedIn, currentUser, loadRooms]);
+
+  // Load messages when room changes
+  useEffect(() => {
+    let intervalId;
+    
+    if (currentRoom) {
+      loadMessages(currentRoom.id);
+      // Set up polling for new messages
+      intervalId = setInterval(() => {
+        loadMessages(currentRoom.id);
+      }, 2000); // Poll every 2 seconds
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentRoom, loadMessages]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, loginForm);
-      console.log('Login response:', response.data);
+      const response = await apiClient.current.post('/api/auth/login', loginForm);
       localStorage.setItem('token', response.data.tokens.accessToken);
       setCurrentUser(response.data.user);
       setIsLoggedIn(true);
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login failed: ' + (error.response?.data?.message || 'Invalid credentials'));
+      alert(`Login failed: ${error.response?.data?.message || 'Invalid credentials'}`);
     } finally {
       setIsLoading(false);
     }
@@ -112,14 +133,13 @@ function App() {
     setIsLoading(true);
     
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, registerForm);
-      console.log('Registration response:', response.data);
+      const response = await apiClient.current.post('/api/auth/register', registerForm);
       localStorage.setItem('token', response.data.tokens.accessToken);
       setCurrentUser(response.data.user);
       setIsLoggedIn(true);
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Registration failed: ' + (error.response?.data?.message || 'Registration error'));
+      alert(`Registration failed: ${error.response?.data?.message || 'Registration error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +147,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    delete apiClient.current.defaults.headers.Authorization;
     setIsLoggedIn(false);
     setCurrentUser(null);
     setRooms([]);
@@ -144,12 +165,7 @@ function App() {
         message_type: 'text'
       };
       
-      await axios.post(`${API_BASE_URL}/api/messages/messages`, messageData, {
-        headers: { 
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await apiClient.current.post('/api/messages/messages', messageData);
       
       setNewMessage('');
       // Force refresh to show the new message
@@ -164,15 +180,13 @@ function App() {
 
   const joinRoom = async (room) => {
     try {
-      await axios.post(`${API_BASE_URL}/api/chat/rooms/${room.id}/join`, {
+      await apiClient.current.post(`/api/chat/rooms/${room.id}/join`, {
         user_id: currentUser.id,
         username: currentUser.username
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setCurrentRoom(room);
     } catch (error) {
-      console.error('Failed to join room:', error);
+      console.warn('Failed to join room:', error.message);
     }
   };
 
@@ -181,32 +195,18 @@ function App() {
     if (!roomName) return;
     
     try {
-      console.log('Current user:', currentUser);
-      
       // Convert user ID string to integer for chat service
       // Using a hash-based approach to convert string ID to number
       const userIdHash = currentUser.id.split('').reduce((acc, char) => {
         return acc + char.charCodeAt(0);
       }, 0);
       
-      console.log('Creating room with:', {
+      const response = await apiClient.current.post('/api/chat/rooms', {
         name: roomName,
         creator_id: userIdHash,
         description: 'Chat room'
       });
       
-      const response = await axios.post(`${API_BASE_URL}/api/chat/rooms`, {
-        name: roomName,
-        creator_id: userIdHash,
-        description: 'Chat room'
-      }, {
-        headers: { 
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Room creation response:', response.data);
       setRooms(prevRooms => [...prevRooms, response.data]);
       setCurrentRoom(response.data);
     } catch (error) {
@@ -232,6 +232,7 @@ function App() {
                 value={registerForm.username}
                 onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
                 required
+                aria-label="Username"
               />
               <input
                 type="email"
@@ -239,6 +240,7 @@ function App() {
                 value={registerForm.email}
                 onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
                 required
+                aria-label="Email"
               />
               <input
                 type="password"
@@ -246,6 +248,7 @@ function App() {
                 value={registerForm.password}
                 onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
                 required
+                aria-label="Password"
               />
               <input
                 type="text"
@@ -253,6 +256,7 @@ function App() {
                 value={registerForm.firstName}
                 onChange={(e) => setRegisterForm({...registerForm, firstName: e.target.value})}
                 required
+                aria-label="First Name"
               />
               <input
                 type="text"
@@ -260,13 +264,18 @@ function App() {
                 value={registerForm.lastName}
                 onChange={(e) => setRegisterForm({...registerForm, lastName: e.target.value})}
                 required
+                aria-label="Last Name"
               />
-              <button type="submit" disabled={isLoading}>
+              <button type="submit" disabled={isLoading} aria-label="Sign Up">
                 {isLoading ? 'Creating...' : 'Sign Up'}
               </button>
               <p>
                 Already have an account?{' '}
-                <button type="button" onClick={() => setShowRegister(false)}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowRegister(false)}
+                  aria-label="Switch to Sign In"
+                >
                   Sign In
                 </button>
               </p>
@@ -280,6 +289,7 @@ function App() {
                 value={loginForm.email}
                 onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
                 required
+                aria-label="Email"
               />
               <input
                 type="password"
@@ -287,13 +297,18 @@ function App() {
                 value={loginForm.password}
                 onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
                 required
+                aria-label="Password"
               />
-              <button type="submit" disabled={isLoading}>
+              <button type="submit" disabled={isLoading} aria-label="Sign In">
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </button>
               <p>
-                Don't have an account?{' '}
-                <button type="button" onClick={() => setShowRegister(true)}>
+                Don&apos;t have an account?{' '}
+                <button 
+                  type="button" 
+                  onClick={() => setShowRegister(true)}
+                  aria-label="Switch to Sign Up"
+                >
                   Sign Up
                 </button>
               </p>
@@ -312,7 +327,13 @@ function App() {
           <h1>ChatApp</h1>
           <div className="user-info">
             <span>Welcome, {currentUser?.firstName || currentUser?.username}</span>
-            <button onClick={handleLogout} className="logout-btn">Logout</button>
+            <button 
+              onClick={handleLogout} 
+              className="logout-btn"
+              aria-label="Logout"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </header>
@@ -322,7 +343,13 @@ function App() {
         <div className="sidebar">
           <div className="sidebar-header">
             <h2>Rooms</h2>
-            <button onClick={createRoom} className="create-room-btn">+</button>
+            <button 
+              onClick={createRoom} 
+              className="create-room-btn"
+              aria-label="Create new room"
+            >
+              +
+            </button>
           </div>
           <div className="rooms-list">
             {rooms.map(room => (
@@ -330,6 +357,14 @@ function App() {
                 key={room.id}
                 className={`room-item ${currentRoom?.id === room.id ? 'active' : ''}`}
                 onClick={() => setCurrentRoom(room)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setCurrentRoom(room);
+                  }
+                }}
+                aria-label={`Select room ${room.name}`}
               >
                 <div className="room-name">{room.name}</div>
                 <div className="room-members">{room.member_count || 0} members</div>
@@ -344,7 +379,12 @@ function App() {
             <>
               <div className="chat-header">
                 <h2>{currentRoom.name}</h2>
-                <button onClick={() => joinRoom(currentRoom)}>Join Room</button>
+                <button 
+                  onClick={() => joinRoom(currentRoom)}
+                  aria-label={`Join room ${currentRoom.name}`}
+                >
+                  Join Room
+                </button>
               </div>
               
               <div className="messages-container">
@@ -372,8 +412,15 @@ function App() {
                   placeholder="Type your message..."
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   className="message-input"
+                  aria-label="Message input"
                 />
-                <button onClick={sendMessage} className="send-button">Send</button>
+                <button 
+                  onClick={sendMessage} 
+                  className="send-button"
+                  aria-label="Send message"
+                >
+                  Send
+                </button>
               </div>
             </>
           ) : (
