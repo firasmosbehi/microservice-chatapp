@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 // Skip integration tests in CI environment since they require running services
+// eslint-disable-next-line no-undef
 const isInCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 export default defineConfig({
