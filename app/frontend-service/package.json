@@ -13,7 +13,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:unit": "vitest",
+    "test:integration": "vitest --config vitest.integration.config.js",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:integration": "vitest run --config vitest.integration.config.js --coverage"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
