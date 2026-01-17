@@ -84,6 +84,21 @@ jobs:
       run: |
         npm run test:integration
 
+    - name: Run user service security scan
+      working-directory: app/user-service
+      run: |
+        npm run security
+
+    - name: Run user service linting
+      working-directory: app/user-service
+      run: |
+        npm run lint
+
+    - name: Run user service build verification
+      working-directory: app/user-service
+      run: |
+        npm run build
+
     # - name: Run user service linting
     #   working-directory: app/user-service
     #   run: |
