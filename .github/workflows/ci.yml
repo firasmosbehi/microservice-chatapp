@@ -17,6 +17,17 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Debug file structure
+      working-directory: app/frontend-service
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Listing src directory:"
+        ls -la src/
+        echo "Listing test files:"
+        find src/ -name "*.test.js" -o -name "*.spec.js"
+        echo "Vitest config:"
+        cat vitest.config.js
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
