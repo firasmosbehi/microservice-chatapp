@@ -11,29 +11,20 @@ permissions:
   packages: write
 
 jobs:
+  # Frontend Service Tests
   frontend-test:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'app/frontend-service/') }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Debug file structure
-      working-directory: app/frontend-service
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Listing src directory:"
-        ls -la src/
-        echo "Listing test files:"
-        find src/ -name "*.test.js" -o -name "*.spec.js"
-        echo "Vitest config:"
-        cat vitest.config.js
 
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
+        cache-dependency-path: 'app/frontend-service/package-lock.json'
 
     - name: Install frontend dependencies
       working-directory: app/frontend-service
@@ -63,15 +54,40 @@ jobs:
       run: |
         npm run build
 
-  test:
+  # User Service Tests
+  user-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [chat]
-        include:
-          - service: chat
-            path: ./app/chat-service
-            
+    if: ${{ github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'app/user-service/') }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'app/user-service/package-lock.json'
+
+    - name: Install user service dependencies
+      working-directory: app/user-service
+      run: |
+        npm ci
+
+    - name: Run user service tests
+      working-directory: app/user-service
+      run: |
+        npm test
+
+    - name: Run user service linting
+      working-directory: app/user-service
+      run: |
+        npm run lint
+
+  # Chat Service Tests
+  chat-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'app/chat-service/') }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -87,63 +103,119 @@ jobs:
       with:
         path: |
           ~/.cache/pypoetry
-          ${{ matrix.path }}/.venv
-          ${{ matrix.path }}/poetry.lock
-        key: poetry-${{ matrix.service }}-${{ hashFiles(format('{0}/poetry.lock', matrix.path)) }}
+          app/chat-service/.venv
+          app/chat-service/poetry.lock
+        key: poetry-chat-${{ hashFiles('app/chat-service/poetry.lock') }}
         restore-keys: |
-          poetry-${{ matrix.service }}-
+          poetry-chat-
 
     - name: Install Poetry
       run: |
         pip install poetry
 
-    - name: Install dependencies
-      working-directory: ${{ matrix.path }}
+    - name: Install chat service dependencies
+      working-directory: app/chat-service
       run: |
-        rm -rf poetry.lock
         poetry install
 
-    - name: Run tests
-      working-directory: ${{ matrix.path }}
+    - name: Run chat service tests
+      working-directory: app/chat-service
       run: |
-        # Use fast test runner for faster CI builds
         poetry run python run_tests_fast.py
 
     - name: Run security scans
-      working-directory: ${{ matrix.path }}
+      working-directory: app/chat-service
       run: |
-        # Install security tools
         poetry run pip install safety bandit
         
-        # Run safety check for vulnerable dependencies
         echo "🔍 Running safety dependency check..."
         poetry run safety check || echo "⚠️ Safety check completed with findings"
         
-        # Run bandit security scanner
         echo "🛡️ Running bandit security scan..."
         poetry run bandit -r chat_app/ -ll || echo "⚠️ Bandit scan completed with findings"
 
     - name: Run linting and code quality checks
-      working-directory: ${{ matrix.path }}
+      working-directory: app/chat-service
       run: |
         echo "🧹 Running code quality checks..."
         
-        # Run flake8
         echo "🔍 Running flake8 linting..."
         poetry run flake8 chat_app/ --max-line-length=100 --extend-ignore=E203,W503,E501,W292,W291,W293,E722,E128,F841,F401 || echo "⚠️ Flake8 found issues"
         
-        # Run black formatting check
         echo "🎨 Running black formatting check..."
         poetry run black --check chat_app/ || echo "⚠️ Black formatting issues found"
         
-        # Run mypy type checking
         echo "📝 Running mypy type checking..."
         poetry run mypy chat_app/ || echo "⚠️ MyPy type checking issues found"
-        
-        echo "✅ All quality checks completed"
 
+  # Message Service Tests
+  message-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'app/message-service/') }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.19'
+
+    - name: Install message service dependencies
+      working-directory: app/message-service
+      run: |
+        go mod tidy
+
+    - name: Run message service tests
+      working-directory: app/message-service
+      run: |
+        go test ./...
+
+    - name: Run message service linting
+      working-directory: app/message-service
+      run: |
+        go vet ./...
+        go fmt ./...
+
+  # Gateway Service Tests
+  gateway-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'app/gateway-service/') }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          app/gateway-service/target
+        key: rust-gateway-${{ hashFiles('app/gateway-service/Cargo.lock') }}
+        restore-keys: |
+          rust-gateway-
+
+    - name: Run gateway service tests
+      working-directory: app/gateway-service
+      run: |
+        cargo test
+
+    - name: Run gateway service linting
+      working-directory: app/gateway-service
+      run: |
+        cargo fmt --check
+        cargo clippy -- -D warnings
+
+  # Docker Build and Push (only on main branch)
   docker-build-and-push:
-    needs: test
+    needs: [frontend-test, user-test, chat-test, message-test, gateway-test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
