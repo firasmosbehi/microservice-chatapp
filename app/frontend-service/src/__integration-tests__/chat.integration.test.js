@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 
 // Test configuration
+// eslint-disable-next-line no-undef
 const TEST_API_BASE_URL = process.env.TEST_API_BASE_URL || 'http://localhost:8000';
 const TEST_TIMEOUT = 15000;
 
@@ -305,10 +306,12 @@ describe('Chat Integration Tests', () => {
         messageType: 'text'
       });
       
+      // eslint-disable-next-line no-undef
       messageId = messageResponse.data.id;
     });
 
     it('should mark message as read', async () => {
+      // eslint-disable-next-line no-undef
       const response = await apiClient.put(`/api/messages/${messageId}/read`);
 
       expect(response.status).toBe(200);

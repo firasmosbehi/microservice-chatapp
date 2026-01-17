@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 
 // Test configuration
+// eslint-disable-next-line no-undef
 const TEST_API_BASE_URL = process.env.TEST_API_BASE_URL || 'http://localhost:8000';
 const TEST_TIMEOUT = 10000;
 
