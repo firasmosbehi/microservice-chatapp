@@ -8,11 +8,11 @@ const { once } = require('events');
 function createTestServer() {
   return http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    
+
     // Parse URL and method
     const url = req.url;
     const method = req.method.toLowerCase();
-    
+
     // Route handling
     if (url === '/' && method === 'get') {
       // Health check
@@ -31,14 +31,14 @@ function createTestServer() {
       req.on('end', () => {
         try {
           const userData = JSON.parse(body);
-          
+
           // Basic validation
           if (!userData.email || !userData.password) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'Email and password are required' }));
             return;
           }
-          
+
           // Simulate successful registration
           res.writeHead(201);
           res.end(JSON.stringify({
@@ -63,13 +63,13 @@ function createTestServer() {
       req.on('end', () => {
         try {
           const credentials = JSON.parse(body);
-          
+
           if (!credentials.email || !credentials.password) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'Email and password are required' }));
             return;
           }
-          
+
           // Simulate successful login
           res.writeHead(200);
           res.end(JSON.stringify({
@@ -92,7 +92,7 @@ function createTestServer() {
         res.end(JSON.stringify({ error: 'Authorization required' }));
         return;
       }
-      
+
       res.writeHead(200);
       res.end(JSON.stringify({
         user: {
@@ -131,7 +131,7 @@ describe('User Service HTTP Integration Tests', () => {
     it('should return service health status', async () => {
       const response = await fetch(`${baseUrl}/`);
       const data = await response.json();
-      
+
       expect(response.status).toBe(200);
       expect(data).toHaveProperty('status', 'healthy');
       expect(data).toHaveProperty('service', 'User Service');
@@ -151,9 +151,9 @@ describe('User Service HTTP Integration Tests', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(201);
       expect(data).toHaveProperty('message');
       expect(data.user).toHaveProperty('id');
@@ -166,9 +166,9 @@ describe('User Service HTTP Integration Tests', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}) // Empty body
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(400);
       expect(data).toHaveProperty('error');
     });
@@ -186,9 +186,9 @@ describe('User Service HTTP Integration Tests', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(200);
       expect(data).toHaveProperty('token');
       expect(data.user).toHaveProperty('id');
@@ -201,9 +201,9 @@ describe('User Service HTTP Integration Tests', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}) // Empty body
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(400);
       expect(data).toHaveProperty('error');
     });
@@ -214,9 +214,9 @@ describe('User Service HTTP Integration Tests', () => {
       const response = await fetch(`${baseUrl}/profile`, {
         headers: { 'Authorization': 'Bearer valid-token' }
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(200);
       expect(data.user).toHaveProperty('id');
       expect(data.user).toHaveProperty('email');
@@ -225,7 +225,7 @@ describe('User Service HTTP Integration Tests', () => {
     it('should reject protected endpoint without token', async () => {
       const response = await fetch(`${baseUrl}/profile`);
       const data = await response.json();
-      
+
       expect(response.status).toBe(401);
       expect(data).toHaveProperty('error');
     });
@@ -234,9 +234,9 @@ describe('User Service HTTP Integration Tests', () => {
       const response = await fetch(`${baseUrl}/profile`, {
         headers: { 'Authorization': 'InvalidFormat' }
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(401);
       expect(data).toHaveProperty('error');
     });
@@ -246,7 +246,7 @@ describe('User Service HTTP Integration Tests', () => {
     it('should return 404 for unknown routes', async () => {
       const response = await fetch(`${baseUrl}/non-existent-route`);
       const data = await response.json();
-      
+
       expect(response.status).toBe(404);
       expect(data).toHaveProperty('error');
     });
@@ -257,9 +257,9 @@ describe('User Service HTTP Integration Tests', () => {
         headers: { 'Content-Type': 'application/json' },
         body: 'invalid json'
       });
-      
+
       const data = await response.json();
-      
+
       expect(response.status).toBe(400);
       expect(data).toHaveProperty('error');
     });

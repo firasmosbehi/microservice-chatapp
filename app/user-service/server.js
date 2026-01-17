@@ -162,13 +162,13 @@ const generateTokens = (userId) => {
     JWT_SECRET,
     { expiresIn: '15m' }
   );
-  
+
   const refreshToken = jwt.sign(
     { userId, type: 'refresh' },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
-  
+
   return { accessToken, refreshToken };
 };
 
@@ -217,8 +217,8 @@ const generateVerificationEmail = (token) => {
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'User Service Running', 
+  res.json({
+    message: 'User Service Running',
     version: '1.0.0',
     status: 'healthy'
   });
@@ -236,10 +236,10 @@ app.post('/register', async (req, res) => {
     const { username, email, password, firstName, lastName } = value;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ 
-      $or: [{ email: email.toLowerCase() }, { username }] 
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { username }]
     });
-    
+
     if (existingUser) {
       if (existingUser.email === email.toLowerCase()) {
         return res.status(409).json({ error: 'Email already registered' });
@@ -358,7 +358,7 @@ app.post('/login', async (req, res) => {
 app.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
-    
+
     if (!token) {
       return res.status(400).json({ error: 'Verification token required' });
     }
@@ -385,7 +385,7 @@ app.get('/verify-email', async (req, res) => {
 app.post('/refresh-token', async (req, res) => {
   try {
     const { refreshToken } = req.body;
-    
+
     if (!refreshToken) {
       return res.status(400).json({ error: 'Refresh token required' });
     }
@@ -419,7 +419,7 @@ app.post('/refresh-token', async (req, res) => {
 app.get('/profile', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Authorization token required' });
     }
@@ -430,7 +430,7 @@ app.get('/profile', async (req, res) => {
     }
 
     const user = await User.findById(decoded.userId).select('-password -emailVerificationToken -passwordResetToken -passwordResetExpires');
-    
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -447,7 +447,7 @@ app.get('/profile', async (req, res) => {
 app.put('/profile', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Authorization token required' });
     }
@@ -473,9 +473,9 @@ app.put('/profile', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ 
+    res.json({
       message: 'Profile updated successfully',
-      user 
+      user
     });
 
   } catch (error) {
@@ -489,7 +489,7 @@ app.put('/change-password', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     const { currentPassword, newPassword } = req.body;
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Authorization token required' });
     }
@@ -537,7 +537,7 @@ app.put('/change-password', async (req, res) => {
 app.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({ error: 'Email required' });
     }
@@ -571,7 +571,7 @@ app.post('/forgot-password', async (req, res) => {
 app.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    
+
     if (!token || !newPassword) {
       return res.status(400).json({ error: 'Token and new password required' });
     }
