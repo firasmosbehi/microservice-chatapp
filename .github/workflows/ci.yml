@@ -28,10 +28,18 @@ jobs:
       run: |
         npm ci
 
-    - name: Run frontend tests
+    - name: Run frontend unit tests
       working-directory: app/frontend-service
       run: |
-        npm test
+        npm run test:unit
+
+    - name: Run frontend integration tests
+      working-directory: app/frontend-service
+      run: |
+        npm run test:integration
+      env:
+        TEST_API_BASE_URL: http://localhost:8000
+        TEST_TIMEOUT: 15000
 
     - name: Run frontend linting
       working-directory: app/frontend-service
