@@ -36,13 +36,28 @@ jobs:
       run: |
         npm run test:unit
 
+    - name: Set up Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
+
+    - name: Start required services for integration tests
+      working-directory: app
+      run: |
+        # Start databases and backend services
+        docker-compose up -d mongo postgres user-service chat-service message-service gateway-service
+        # Wait for services to be ready
+        sleep 30
+        # Verify services are running
+        docker-compose ps
+
     - name: Run frontend integration tests
       working-directory: app/frontend-service
       run: |
-        npm run test:integration || echo "Integration tests skipped in CI environment"
+        npm run test:integration
       env:
         TEST_API_BASE_URL: http://localhost:8000
-        TEST_TIMEOUT: 15000
+        TEST_TIMEOUT: 30000
 
     - name: Run frontend linting
       working-directory: app/frontend-service

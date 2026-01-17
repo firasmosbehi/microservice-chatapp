@@ -1,19 +1,15 @@
 import { defineConfig } from 'vite';
 
-// Skip integration tests in CI environment since they require running services
-// eslint-disable-next-line no-undef
-const isInCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-
 export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./src/__integration-tests__/setup.integration.js'],
     globals: true,
-    include: isInCI ? [] : ['src/__integration-tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: ['src/__integration-tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: ['node_modules/**', 'dist/**'],
-    testTimeout: 15000,
-    hookTimeout: 15000,
-    teardownTimeout: 5000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    teardownTimeout: 10000,
     reporters: ['verbose'],
     coverage: {
       enabled: true,
