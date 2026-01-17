@@ -79,6 +79,11 @@ jobs:
       run: |
         npm test
 
+    - name: Run user service integration tests
+      working-directory: app/user-service
+      run: |
+        npm run test:integration
+
     # - name: Run user service linting
     #   working-directory: app/user-service
     #   run: |
