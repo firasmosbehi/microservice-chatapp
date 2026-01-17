@@ -5,6 +5,7 @@ description = "Advanced real-time chat service with WebSocket support"
 authors = ["Your Name <your.email@example.com>"]
 license = "MIT"
 packages = [{include = "chat_app"}]
+# Cache bust for CI poetry.lock compatibility
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
