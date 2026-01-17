@@ -36,20 +36,19 @@ jobs:
       run: |
         npm run test:unit
 
-    - name: Set up Docker Compose
+    - name: Start mock gateway service for integration tests
+      working-directory: app/frontend-service
       run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
-
-    - name: Start required services for integration tests
-      working-directory: app
-      run: |
-        # Start databases and backend services
-        docker-compose up -d mongo postgres user-service chat-service message-service gateway-service
-        # Wait for services to be ready
-        sleep 30
-        # Verify services are running
-        docker-compose ps
+        # Install express and cors for mock server
+        npm install express cors
+        # Start mock gateway server in background
+        node mock-gateway.js &
+        MOCK_PID=$!
+        echo "Mock server PID: $MOCK_PID"
+        # Wait for server to start
+        sleep 10
+        # Verify server is running
+        curl -f http://localhost:8000/health || exit 1
 
     - name: Run frontend integration tests
       working-directory: app/frontend-service
