@@ -64,11 +64,6 @@ temp/
 # Git files
 .git/
 
-# Documentation (if not needed in repo)
-README.md
-docs/
-*.md
-
 # Configuration files that shouldn't be committed
 .eslintrc*
 .prettierrc*
@@ -91,7 +86,6 @@ SECURITY_ADVISORY.md
 .settings/
 
 # Package manager files
-package-lock.json
 yarn.lock
 
 # Type checking
