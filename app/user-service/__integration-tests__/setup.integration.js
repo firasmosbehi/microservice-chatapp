@@ -9,13 +9,13 @@ beforeAll(async () => {
   // Create in-memory MongoDB instance
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
-  
+
   // Connect to in-memory database
   await mongoose.connect(mongoUri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
-  
+
   console.log('🚀 Connected to in-memory MongoDB for integration tests');
 });
 
