@@ -386,12 +386,170 @@ docker-compose exec mongo mongosh chatapp-users --eval "db.users.find()"
 docker-compose exec postgres psql -U postgres -d chatapp_messages -c "SELECT * FROM messages LIMIT 10;"
 ```
 
-### Prerequisites
-- Docker and Docker Compose
-- Node.js 16+ (for user-service development)
-- Python 3.8+ (for chat-service development)
-- Go 1.19+ (for message-service development)
-- Rust/Cargo (for gateway-service development)
+### Development Best Practices
+
+### Code Organization Guidelines
+
+**Service Boundaries:**
+- Each service should have a single responsibility
+- Services communicate only through well-defined APIs
+- Shared code should be minimized - prefer duplication over tight coupling
+- Database schemas are owned by individual services
+
+**API Design Principles:**
+- RESTful APIs for HTTP endpoints
+- WebSocket for real-time communication
+- Consistent error handling and response formats
+- Proper HTTP status codes and meaningful error messages
+
+### Development Workflow Recommendations
+
+**Feature Development Process:**
+1. Create feature branch from `dev`: `git checkout -b feature/new-feature`
+2. Develop and test locally using Docker Compose
+3. Run full test suite: `poetry run python run_tests_optimized.py full`
+4. Create pull request to `dev` branch
+5. Wait for CI pipeline completion
+6. Merge after approval
+
+**Hot Reloading Setup:**
+```bash
+# For Python services with auto-reload
+cd app/chat-service
+poetry run uvicorn chat_app.app:app --host 0.0.0.0 --port 3002 --reload
+
+# For Node.js services with nodemon
+cd app/user-service
+npx nodemon server.js
+
+# For Go services with air (install air first)
+cd app/message-service
+air
+
+# For Rust services with cargo-watch
+cd app/gateway-service
+cargo watch -x run
+```
+
+### Testing Strategies
+
+**Test Pyramid Implementation:**
+- **Unit Tests**: Test individual functions and classes in isolation
+- **Integration Tests**: Test service interactions through the gateway
+- **End-to-End Tests**: Test complete user workflows (manual or automated)
+
+**Mocking Best Practices:**
+- Mock external HTTP calls in unit tests
+- Use in-memory databases for integration tests when possible
+- Mock time-dependent functions for consistent test results
+- Avoid mocking internal service dependencies unnecessarily
+
+### Performance Optimization Tips
+
+**Caching Strategies:**
+- Redis caching for frequently accessed data
+- HTTP caching headers for static assets
+- Database query result caching
+- Connection pooling for database connections
+
+**Database Optimization:**
+- Proper indexing on frequently queried fields
+- Connection pooling configuration
+- Query optimization and EXPLAIN analysis
+- Regular database maintenance tasks
+
+### Security Considerations
+
+**Authentication Security:**
+- JWT token expiration and refresh mechanisms
+- Secure password hashing (bcrypt/scrypt)
+- Rate limiting on authentication endpoints
+- Input validation and sanitization
+
+**Data Protection:**
+- Environment variable management for secrets
+- TLS/SSL encryption for all service communications
+- Regular security scanning in CI pipeline
+- Dependency vulnerability monitoring
+
+## Prerequisites
+
+Before working with this codebase, ensure you have the following installed:
+
+- **Docker and Docker Compose** - For containerized service deployment
+- **Node.js 16+** - For user-service development
+- **Python 3.8+** - For chat-service development  
+- **Go 1.19+** - For message-service development
+- **Rust/Cargo** - For gateway-service development
+- **Poetry** - Python dependency management (`pip install poetry`)
+- **Git** - Version control
+
+### Optional Development Tools
+
+```bash
+# HTTP client for API testing
+pip install httpie
+
+# Database GUI tools
+brew install --cask mongodb-compass pgadmin4
+
+# Container management utilities
+brew install docker-compose-switch
+
+# System monitoring tools
+brew install htop
+```
+
+### API Testing Tools
+```bash
+# Install httpie for better API testing
+pip install httpie
+
+# Test API endpoints with httpie
+http POST :8000/api/auth/login email=test@example.com password=password123
+
+# With JWT token
+http GET :8000/api/users/profile Authorization:"Bearer $TOKEN"
+```
+
+### Database Management Tools
+```bash
+# MongoDB GUI tool
+brew install mongodb-compass
+
+# PostgreSQL GUI tool
+brew install pgadmin4
+
+# Redis CLI tools
+brew install redis
+redis-cli -h localhost -p 6379
+```
+
+### Container Management
+```bash
+# Docker Compose extensions
+brew install docker-compose-switch
+
+# Container monitoring
+docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
+
+# Container resource limits
+docker-compose up -d --scale chat-service=3
+```
+
+### Debugging Tools
+```bash
+# Network debugging
+tcpdump -i any port 3002
+
+# Process monitoring
+htop
+lsof -i :3002
+
+# Memory profiling (Python)
+pip install memory_profiler
+python -m memory_profiler script.py
+```
 
 ### Local Development Without Docker
 For working on individual services locally while keeping others in Docker:
@@ -451,14 +609,120 @@ JWT_SECRET=super-secret-gateway-key
 ```
 
 ## Repository Structure
+
 ```
-app/
-├── docker-compose.yml          # Main orchestration file
-├── frontend-service/           # React/Vite SPA
-├── gateway-service/            # Rust API gateway/load balancer
-├── user-service/               # Node.js user management [MongoDB]
-├── chat-service/               # Python real-time chat
-└── message-service/            # Go message persistence [PostgreSQL]
+.
+├── app/
+│   ├── docker-compose.yml          # Main orchestration file for all services
+│   ├── frontend-service/           # React/Vite SPA (Port 3000)
+│   │   ├── src/                   # Source code
+│   │   ├── public/                # Static assets
+│   │   ├── package.json           # Dependencies and scripts
+│   │   └── vite.config.js         # Vite configuration
+│   ├── gateway-service/            # Rust API gateway/load balancer (Port 8000)
+│   │   ├── src/                   # Rust source code
+│   │   ├── Cargo.toml             # Rust dependencies
+│   │   └── Dockerfile             # Docker configuration
+│   ├── user-service/               # Node.js user management (Port 3001) [MongoDB]
+│   │   ├── server.js              # Express server entry point
+│   │   ├── routes/                # API route handlers
+│   │   ├── models/                # Database models
+│   │   ├── middleware/            # Custom middleware
+│   │   ├── package.json           # Dependencies and scripts
+│   │   └── .env                   # Environment variables
+│   ├── chat-service/               # Python real-time chat (Port 3002)
+│   │   ├── chat_app/              # Application code
+│   │   │   ├── __init__.py        # Package initialization
+│   │   │   ├── app.py             # FastAPI application setup
+│   │   │   ├── models.py          # Pydantic data models
+│   │   │   ├── services.py        # Business logic layer
+│   │   │   ├── routes.py          # API endpoints
+│   │   │   └── websocket.py       # WebSocket handlers
+│   │   ├── tests/                 # Test suite
+│   │   │   ├── unit/              # Unit tests
+│   │   │   ├── integration/       # Integration tests
+│   │   │   ├── security/          # Security tests
+│   │   │   └── linting/           # Linting tests
+│   │   ├── scripts/               # Test runners
+│   │   │   ├── run_tests.py       # Traditional runner
+│   │   │   └── run_tests_optimized.py  # Fast runner
+│   │   ├── pyproject.toml         # Poetry configuration
+│   │   └── requirements.txt       # Python dependencies
+│   └── message-service/            # Go message persistence (Port 3003) [PostgreSQL]
+│       ├── main.go                # Go application entry point
+│       ├── handlers/              # HTTP handlers
+│       ├── models/                # Data models
+│       ├── database/              # Database connection logic
+│       ├── go.mod                 # Go modules
+│       └── Dockerfile             # Docker configuration
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # CI/CD pipeline configuration
+├── AGENTS.md                       # This file - Development guide and architecture documentation
+└── README.md                       # Project overview and quick start guide
+```
+
+## Advanced Testing Commands
+
+### Running Specific Tests
+
+**Chat Service - Targeted Testing:**
+```bash
+# Run only API tests
+poetry run pytest tests/unit/test_api.py -v
+
+# Run only model tests
+poetry run pytest tests/unit/test_models.py -v
+
+# Run only service tests
+poetry run pytest tests/unit/test_services.py -v
+
+# Run integration tests
+poetry run pytest tests/integration/ -v
+
+# Run with specific markers
+poetry run pytest -m "not slow"  # Skip slow tests
+poetry run pytest -m "security"  # Run only security tests
+```
+
+**Debugging Test Failures:**
+```bash
+# Run tests with verbose output and stop on first failure
+poetry run pytest -xvs
+
+# Run tests with coverage report
+poetry run pytest --cov=chat_app --cov-report=html tests/
+
+# Run tests and generate coverage badge
+poetry run pytest --cov=chat_app --cov-report=term-missing tests/
+```
+
+### Test Environment Setup
+
+**Setting up test databases:**
+```bash
+# For integration tests requiring databases
+docker-compose up -d mongo postgres redis
+
+# Run tests with external services
+poetry run pytest tests/integration/ -v
+
+# Clean up test containers
+docker-compose down
+```
+
+### Performance Testing
+
+**Load Testing Commands:**
+```bash
+# Install load testing tools
+pip install locust
+
+# Run load tests (from chat-service directory)
+locust -f tests/performance/load_test.py --headless -u 100 -r 10
+
+# WebSocket load testing
+# Use artillery or similar tools for WebSocket performance testing
 ```
 
 ## Monitoring and Debugging
@@ -550,21 +814,68 @@ docker-compose logs | grep "WebSocket"
 
 ## CI/CD Pipeline
 
-The repository uses GitHub Actions for continuous integration with automated testing and security scanning:
+The repository uses GitHub Actions for continuous integration with automated testing, security scanning, and Docker image building:
 
 ### Pipeline Stages
 
-1. **Testing Stage** - Runs on every push/PR to `main` and `dev` branches:
+1. **Frontend Testing Stage** - Runs on every push/PR to `main` and `dev` branches:
+   - Node.js setup with caching
+   - Frontend dependency installation
    - Unit tests execution
-   - Integration tests
-   - Security vulnerability scanning
-   - Code quality and linting checks
-   - Type checking
+   - ESLint linting
+   - Production build verification
 
-2. **Docker Build & Push Stage** - Runs only on pushes to `main` branch:
+2. **Backend Testing Stage** - Runs on every push/PR to `main` and `dev` branches:
+   - Matrix strategy for different services
+   - Python setup with Poetry dependency management
+   - Comprehensive caching for faster builds
+   - Unit tests with optimized runner (`run_tests_optimized.py fast`)
+   - Security scanning with Safety and Bandit
+   - Code quality checks with Flake8, Black, and MyPy
+
+3. **Docker Build & Push Stage** - Runs only on pushes to `main` branch:
+   - Multi-architecture builds (linux/amd64, linux/arm64)
    - Builds Docker images for all services
    - Pushes to GitHub Container Registry (GHCR)
-   - Supports multi-architecture builds (amd64, arm64)
+   - Comprehensive build caching for performance
+
+### CI Caching Strategy
+
+The pipeline implements extensive caching to optimize build times:
+
+**Language-Specific Caching:**
+- **Node.js**: `~/.npm` and `node_modules` caching
+- **Python**: Poetry virtual environments and pip cache
+- **Go**: Module cache and sum files
+- **Rust**: Cargo registry, git dependencies, and target directory
+- **Docker**: Buildx cache for layer reuse
+
+**Performance Improvements:**
+- Poetry dependency caching reduces Python builds from 2-3 minutes to 30-60 seconds
+- Node.js module caching cuts frontend builds from 1-2 minutes to 20-40 seconds
+- Rust compilation caching provides 95%+ improvement (30+ minutes → 1-2 minutes)
+- Docker layer caching enables incremental builds
+
+### Security Scanning in CI
+
+Automated security checks include:
+```bash
+# Dependency vulnerability scanning
+poetry run safety check
+
+# Static code analysis
+poetry run bandit -r chat_app/ -ll
+
+# The pipeline runs these automatically and reports findings
+```
+
+### Code Quality Enforcement
+
+The CI pipeline enforces code quality standards:
+- **Flake8 linting** with customized ignore rules
+- **Black formatting** compliance checking
+- **MyPy type checking** for Python services
+- **ESLint** for frontend JavaScript/TypeScript code
 
 ### Security Checks in CI
 
@@ -652,7 +963,7 @@ poetry run pytest tests/unit/test_api.py -v
 poetry run pytest tests/integration/ -v
 ```
 
-### Error Handling and Logging
+## Error Handling and Logging
 
 **Logging Patterns:**
 - Gateway service uses structured logging with log levels
@@ -676,31 +987,180 @@ poetry run pytest tests/integration/ -v
 - `500 Internal Server Error`: Service failures
 - `503 Service Unavailable`: Downstream service issues
 
-```bash
-# Check service health
-curl http://localhost:8000/health
-curl http://localhost:3001/
-curl http://localhost:3002/
-curl http://localhost:3003/
+## Troubleshooting Guide
 
-# View docker container status
+### Service Startup Issues
+
+**Check Service Status:**
+```bash
+# View all container status
 docker-compose ps
 
-# Check database connections
-docker-compose exec mongo mongosh
-docker-compose exec postgres psql -U postgres
+# Check specific service logs
+docker-compose logs user-service
+docker-compose logs chat-service
+docker-compose logs message-service
+docker-compose logs gateway-service
+```
 
+**Restart Individual Services:**
+```bash
 # Restart specific service
 docker-compose restart user-service
 
-# Rebuild specific service
+# Rebuild and restart
 docker-compose build --no-cache user-service
+docker-compose up -d user-service
+```
 
-# Fix Rust build issues
+### Database Connection Issues
+
+**MongoDB Troubleshooting:**
+```bash
+# Check MongoDB connection
+docker-compose exec mongo mongosh --eval "db.stats()"
+
+# View MongoDB logs
+docker-compose logs mongo
+
+# Connect to MongoDB shell
+docker-compose exec mongo mongosh chatapp-users
+
+# Check users collection
+db.users.find().pretty()
+```
+
+**PostgreSQL Troubleshooting:**
+```bash
+# Check PostgreSQL connection
+docker-compose exec postgres psql -U postgres -c "SELECT version();"
+
+# View PostgreSQL logs
+docker-compose logs postgres
+
+# Connect to PostgreSQL
+docker-compose exec postgres psql -U postgres -d chatapp_messages
+
+# Check messages table
+SELECT COUNT(*) FROM messages;
+SELECT * FROM messages ORDER BY created_at DESC LIMIT 10;
+```
+
+### Authentication Issues
+
+**JWT Token Debugging:**
+```bash
+# Test user registration
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
+
+# Test user login
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Test protected endpoint with token
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8000/api/users/profile
+```
+
+### WebSocket Connection Issues
+
+**WebSocket Debugging:**
+```bash
+# Test WebSocket connection
+websocat ws://localhost:8000/api/chat/ws/room1
+
+# Or use wscat
+npm install -g wscat
+wscat -c ws://localhost:8000/api/chat/ws/room1
+
+# Check CORS configuration
+curl -H "Origin: http://localhost:3000" \
+     -H "Access-Control-Request-Method: GET" \
+     -H "Access-Control-Request-Headers: Authorization" \
+     -X OPTIONS http://localhost:8000/api/chat/ws/room1
+```
+
+### Performance Monitoring
+
+**Resource Usage Monitoring:**
+```bash
+# Monitor container resource usage
+docker stats
+
+# Monitor specific service CPU/Memory
+docker stats user-service chat-service message-service gateway-service
+
+# Check Docker disk usage
+docker system df
+```
+
+**Network Troubleshooting:**
+```bash
+# Check Docker network connectivity
+docker network ls
+docker network inspect app_default
+
+# Test service connectivity
+docker-compose exec gateway-service curl -v http://user-service:3001/health
+docker-compose exec gateway-service curl -v http://chat-service:3002/health
+docker-compose exec gateway-service curl -v http://message-service:3003/health
+```
+
+### Common Fixes
+
+**Rust Build Issues:**
+```bash
 cd app/gateway-service
+
 # Option 1: Update Dockerfile to use newer Rust version
 sed -i 's/rust:1.81/rust:1.83/' Dockerfile
+
 # Option 2: Update specific dependencies to compatible versions
 cargo update time-macros --precise 0.2.24
 cargo update tinystr --precise 0.8.1
+
+# Clean and rebuild
+cargo clean
+cargo build
+```
+
+**Python Dependency Issues:**
+```bash
+cd app/chat-service
+
+# Update Poetry lock file
+poetry lock --no-update
+
+# Clear Poetry cache
+poetry cache clear pypi --all
+
+# Reinstall dependencies
+poetry install
+```
+
+**Node.js Issues:**
+```bash
+cd app/user-service
+
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Docker Cleanup:**
+```bash
+# Remove unused containers, networks, and images
+docker system prune -a
+
+# Remove volumes
+docker volume prune
+
+# Reset everything (use with caution)
+docker-compose down -v --remove-orphans
+docker-compose up -d
 ```
